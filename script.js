@@ -137,11 +137,6 @@ class BSSApp {
             this.handleAddButtonClick();
         });
 
-        // FAB button
-        document.getElementById('fabBtn').addEventListener('click', () => {
-            this.scrollToTop();
-        });
-
         // Search functionality
         const searchInput = document.getElementById('studentSearch');
         if (searchInput) {
@@ -257,7 +252,12 @@ class BSSApp {
             reports: 'Reports'
         };
 
-        document.getElementById('pageTitle').textContent = titles[view] || 'Dashboard';
+        const pageTitle = document.getElementById('pageTitle');
+        if (view === 'dashboard') {
+            pageTitle.textContent = "Katie's BSS";
+        } else {
+            pageTitle.textContent = titles[view] || 'Dashboard';
+        }
         this.currentView = view;
 
         // Show/hide back button based on view
@@ -266,6 +266,14 @@ class BSSApp {
             backBtn.style.visibility = 'hidden';
         } else {
             backBtn.style.visibility = 'visible';
+        }
+
+        // Show/hide add button based on view
+        const addBtn = document.getElementById('addBtn');
+        if (view === 'reports') {
+            addBtn.style.display = 'none';
+        } else {
+            addBtn.style.display = 'flex';
         }
 
         // Render view-specific content
@@ -613,6 +621,7 @@ class BSSApp {
             id: Date.now().toString(),
             studentId: document.getElementById('studentSelect').value,
             type: document.getElementById('interactionType').value,
+            severity: document.getElementById('severityLevel').value || 'no-flag',
             date: document.getElementById('interactionDate').value,
             notes: document.getElementById('interactionNotes').value,
             createdAt: new Date().toISOString()
@@ -626,7 +635,7 @@ class BSSApp {
 
         this.interactions.push(interaction);
         this.saveToLocalStorage();
-        this.showAlert('Interaction logged successfully', 'success');
+        this.showAlert('✅ Interaction logged successfully', 'success');
         
         // Reset form
         form.reset();
@@ -671,6 +680,15 @@ class BSSApp {
         if (interactionType) {
             filteredInteractions = filteredInteractions.filter(i => i.type === interactionType);
         }
+
+        // Store current report data for downloads
+        this.currentReportData = {
+            interactions: filteredInteractions,
+            dateRange,
+            studentId,
+            interactionType,
+            generatedAt: new Date().toISOString()
+        };
 
         // Generate report content
         this.displayReportResults(filteredInteractions, dateRange);
@@ -742,11 +760,16 @@ class BSSApp {
                         ${interactions.slice(0, 10).map(interaction => {
                             const student = this.students.find(s => s.id === interaction.studentId);
                             return `
-                                <div class="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                                <div class="p-3 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" onclick="app.showInteractionDetails('${interaction.id}')">
                                     <div class="flex justify-between items-start">
                                         <div>
                                             <p class="font-medium text-gray-800 dark:text-gray-200">${this.getInteractionTypeLabel(interaction.type)}</p>
                                             <p class="text-sm text-gray-600 dark:text-gray-400">${student?.name || 'Unknown Student'} • ${this.formatDate(interaction.date)}</p>
+                                        </div>
+                                        <div class="text-gray-400 dark:text-gray-500">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256">
+                                                <path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"></path>
+                                            </svg>
                                         </div>
                                     </div>
                                     <p class="text-sm text-gray-700 dark:text-gray-300 mt-2">${interaction.notes}</p>
@@ -814,7 +837,7 @@ class BSSApp {
                 );
             }
 
-            this.showAlert('Student updated successfully', 'success');
+            this.showAlert('✅ Student updated successfully', 'success');
         } else {
             // Adding new student
             // Check for duplicate ID
@@ -832,7 +855,7 @@ class BSSApp {
             };
 
             this.students.push(student);
-            this.showAlert('Student added successfully', 'success');
+            this.showAlert('✅ Student added successfully', 'success');
         }
 
         this.saveToLocalStorage();
@@ -858,6 +881,9 @@ class BSSApp {
                 break;
             case 'logInteraction':
                 // Already on the add interaction page
+                break;
+            case 'reports':
+                // No add button functionality for reports
                 break;
             default:
                 this.navigateTo('logInteraction');
@@ -1026,7 +1052,7 @@ class BSSApp {
             this.saveToLocalStorage();
             this.renderCurrentView();
             this.updateStats();
-            this.showAlert('Student deleted successfully', 'success');
+            this.showAlert('🗑️ Student deleted successfully', 'success');
         }
     }
 
@@ -1289,7 +1315,7 @@ BSSApp.prototype.saveSupportPlan = function() {
     this.saveToLocalStorage();
     this.renderSupportPlans();
     this.closeSupportPlanModal();
-    this.showAlert('Support plan saved successfully', 'success');
+    this.showAlert('✅ Support plan saved successfully', 'success');
 };
 
 BSSApp.prototype.saveDocument = function() {
@@ -1319,7 +1345,7 @@ BSSApp.prototype.saveDocument = function() {
     this.saveToLocalStorage();
     this.renderDocuments();
     this.closeDocumentModal();
-    this.showAlert('Document uploaded successfully', 'success');
+    this.showAlert('📄 Document uploaded successfully', 'success');
 };
 
 BSSApp.prototype.closeSupportPlanModal = function() {
@@ -1354,6 +1380,306 @@ BSSApp.prototype.deleteDocument = function(docId) {
         this.renderDocuments();
         this.showAlert('Document deleted successfully', 'success');
     }
+};
+
+BSSApp.prototype.downloadReport = function(format) {
+    if (!this.currentReportData) {
+        this.showAlert('No report data available. Please generate a report first.', 'error');
+        return;
+    }
+
+    const reportData = this.currentReportData;
+    const studentName = reportData.studentId ? 
+        this.students.find(s => s.id === reportData.studentId)?.name || 'Unknown Student' : 
+        'All Students';
+
+    let content = '';
+    let filename = '';
+    let mimeType = '';
+
+    switch (format) {
+        case 'txt':
+            content = this.generateTextReport(reportData, studentName);
+            filename = `BSS_Report_${new Date().toISOString().split('T')[0]}.txt`;
+            mimeType = 'text/plain';
+            break;
+        case 'pdf':
+            // Note: This is a simplified PDF generation - in production, you'd use a library like jsPDF
+            content = this.generateTextReport(reportData, studentName);
+            filename = `BSS_Report_${new Date().toISOString().split('T')[0]}.pdf`;
+            mimeType = 'application/pdf';
+            this.showAlert('PDF generation requires additional library. Downloading as TXT instead.', 'warning');
+            break;
+        case 'docx':
+            content = this.generateTextReport(reportData, studentName);
+            filename = `BSS_Report_${new Date().toISOString().split('T')[0]}.docx`;
+            mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+            this.showAlert('DOCX generation requires additional library. Downloading as TXT instead.', 'warning');
+            break;
+        case 'xlsx':
+            content = this.generateCSVReport(reportData, studentName);
+            filename = `BSS_Report_${new Date().toISOString().split('T')[0]}.csv`;
+            mimeType = 'text/csv';
+            this.showAlert('XLSX generation requires additional library. Downloading as CSV instead.', 'warning');
+            break;
+    }
+
+    // Create and trigger download
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    this.showAlert(`📥 Report downloaded as ${filename}`, 'success');
+};
+
+BSSApp.prototype.generateTextReport = function(reportData, studentName) {
+    const { interactions, dateRange, interactionType } = reportData;
+    let content = `Katie's Behavior Support Specialist - Report\n`;
+    content += `Generated: ${new Date().toLocaleDateString()}\n`;
+    content += `Date Range: Last ${dateRange} days\n`;
+    content += `Student: ${studentName}\n`;
+    content += `Interaction Type: ${interactionType ? this.getInteractionTypeLabel(interactionType) : 'All Types'}\n`;
+    content += `\n${'='.repeat(50)}\n\n`;
+
+    if (interactions.length === 0) {
+        content += `No interactions found for the selected criteria.\n`;
+        return content;
+    }
+
+    // Summary
+    content += `SUMMARY\n`;
+    content += `${'='.repeat(20)}\n`;
+    content += `Total Interactions: ${interactions.length}\n`;
+    
+    // Group by type
+    const byType = {};
+    interactions.forEach(interaction => {
+        if (!byType[interaction.type]) {
+            byType[interaction.type] = [];
+        }
+        byType[interaction.type].push(interaction);
+    });
+
+    content += `By Type:\n`;
+    Object.keys(byType).forEach(type => {
+        content += `  - ${this.getInteractionTypeLabel(type)}: ${byType[type].length}\n`;
+    });
+
+    content += `Students Involved: ${new Set(interactions.map(i => i.studentId)).size}\n\n`;
+
+    // Detailed interactions
+    content += `DETAILED INTERACTIONS\n`;
+    content += `${'='.repeat(30)}\n\n`;
+
+    interactions.forEach((interaction, index) => {
+        const student = this.students.find(s => s.id === interaction.studentId);
+        content += `${index + 1}. ${this.getInteractionTypeLabel(interaction.type)}\n`;
+        content += `   Student: ${student?.name || 'Unknown Student'}\n`;
+        content += `   Date: ${this.formatDate(interaction.date)}\n`;
+        content += `   Notes: ${interaction.notes}\n\n`;
+    });
+
+    return content;
+};
+
+BSSApp.prototype.generateCSVReport = function(reportData, studentName) {
+    const { interactions } = reportData;
+    let csv = 'Date,Student,Type,Notes\n';
+    
+    interactions.forEach(interaction => {
+        const student = this.students.find(s => s.id === interaction.studentId);
+        const studentName = student?.name || 'Unknown Student';
+        const type = this.getInteractionTypeLabel(interaction.type);
+        const notes = interaction.notes.replace(/"/g, '""'); // Escape quotes
+        csv += `"${interaction.date}","${studentName}","${type}","${notes}"\n`;
+    });
+
+    return csv;
+};
+
+BSSApp.prototype.viewDocument = function(docId) {
+    const doc = this.documents.find(d => d.id === docId);
+    if (!doc) return;
+
+    // Create a modal to view document content
+    const modalHtml = `
+        <div id="documentViewModal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50">
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">📄 ${doc.name}</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">${doc.fileType.toUpperCase()} • ${this.formatFileSize(doc.fileSize)}</p>
+                    </div>
+                    <button onclick="app.closeDocumentViewModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256">
+                            <path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+                    <p class="text-gray-700 dark:text-gray-300">📁 Document preview is not available in this demo version.</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">In a full implementation, document content would be displayed here based on the file type.</p>
+                    <div class="mt-4 flex gap-2">
+                        <button onclick="app.downloadDocument('${doc.id}')" class="btn-primary text-sm">
+                            📥 Download Document
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+};
+
+BSSApp.prototype.closeDocumentViewModal = function() {
+    const modal = document.getElementById('documentViewModal');
+    if (modal) modal.remove();
+};
+
+BSSApp.prototype.downloadDocument = function(docId) {
+    const doc = this.documents.find(d => d.id === docId);
+    if (!doc) return;
+
+    // In a real application, this would download the actual file
+    // For demo purposes, we'll create a placeholder file
+    const content = `Document: ${doc.name}\nFile Type: ${doc.fileType}\nUploaded: ${this.formatDate(doc.createdAt)}\nStudent: ${this.currentStudent?.name || 'N/A'}\n\nThis is a placeholder document created in Katie's BSS App demo.\nIn a real implementation, the original document content would be downloaded.`;
+    
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = doc.fileName;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    this.showAlert(`📥 Downloaded ${doc.name}`, 'success');
+};
+
+BSSApp.prototype.editSupportPlan = function(planId) {
+    const plan = this.supportPlans.find(p => p.id === planId);
+    if (!plan) return;
+
+    const modalHtml = `
+        <div id="editSupportPlanModal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50">
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">📝 Edit Support Plan</h3>
+                <form id="editSupportPlanForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Plan Title</label>
+                        <input type="text" id="editPlanTitle" value="${plan.title}" required class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
+                        <textarea id="editPlanDescription" rows="3" class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200">${plan.description || ''}</textarea>
+                    </div>
+                    <div class="flex gap-3 pt-4">
+                        <button type="submit" class="btn-primary flex-1">Update Plan</button>
+                        <button type="button" onclick="app.closeEditSupportPlanModal()" class="btn-secondary flex-1">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    document.getElementById('editSupportPlanForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        this.updateSupportPlan(planId);
+    });
+};
+
+BSSApp.prototype.closeEditSupportPlanModal = function() {
+    const modal = document.getElementById('editSupportPlanModal');
+    if (modal) modal.remove();
+};
+
+BSSApp.prototype.updateSupportPlan = function(planId) {
+    const title = document.getElementById('editPlanTitle').value.trim();
+    const description = document.getElementById('editPlanDescription').value.trim();
+    
+    if (!title) {
+        this.showAlert('Please enter a plan title', 'error');
+        return;
+    }
+
+    const planIndex = this.supportPlans.findIndex(p => p.id === planId);
+    if (planIndex === -1) return;
+
+    this.supportPlans[planIndex] = {
+        ...this.supportPlans[planIndex],
+        title,
+        description,
+        updatedAt: new Date().toISOString()
+    };
+
+    this.saveToLocalStorage();
+    this.renderSupportPlans();
+    this.closeEditSupportPlanModal();
+    this.showAlert('✅ Support plan updated successfully', 'success');
+};
+
+BSSApp.prototype.viewSupportPlan = function(planId) {
+    const plan = this.supportPlans.find(p => p.id === planId);
+    if (!plan) return;
+
+    const modalHtml = `
+        <div id="viewSupportPlanModal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50">
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">📋 ${plan.title}</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Created: ${this.formatDate(plan.createdAt)}</p>
+                    </div>
+                    <button onclick="app.closeViewSupportPlanModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256">
+                            <path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="space-y-4">
+                    ${plan.description ? `
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                            <div class="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+                                <p class="text-gray-800 dark:text-gray-200">${plan.description}</p>
+                            </div>
+                        </div>
+                    ` : ''}
+                    ${plan.fileName ? `
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Attached File</label>
+                            <div class="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+                                <p class="text-gray-800 dark:text-gray-200">📎 ${plan.fileName}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">Size: ${this.formatFileSize(plan.fileSize)}</p>
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+                <div class="flex justify-end mt-6 gap-3">
+                    <button onclick="app.editSupportPlan('${plan.id}'); app.closeViewSupportPlanModal();" class="btn-primary text-sm">Edit Plan</button>
+                    <button onclick="app.closeViewSupportPlanModal()" class="btn-secondary text-sm">Close</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+};
+
+BSSApp.prototype.closeViewSupportPlanModal = function() {
+    const modal = document.getElementById('viewSupportPlanModal');
+    if (modal) modal.remove();
 };
 
 // Initialize the app when DOM is loaded

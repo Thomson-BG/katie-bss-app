@@ -10,12 +10,12 @@
 <body>
     <!-- Dark Mode Toggle -->
     <div class="fixed top-4 right-4 z-50">
-        <button id="darkModeToggle" class="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 p-2 rounded-full shadow-lg transition-colors duration-200">
-            <svg id="sunIcon" class="w-5 h-5 hidden" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"></path>
+        <button id="darkModeToggle" class="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 p-4 rounded-full shadow-lg transition-colors duration-200 w-14 h-14 flex items-center justify-center">
+            <svg id="sunIcon" class="w-8 h-8 hidden" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z"/>
             </svg>
-            <svg id="moonIcon" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+            <svg id="moonIcon" class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+                <path fill-rule="evenodd" d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.981.98 10.503 10.503 0 01-9.694 6.46c-5.799 0-10.5-4.701-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 01.818.162z" clip-rule="evenodd"/>
             </svg>
         </button>
     </div>
@@ -31,7 +31,15 @@
                         <path d="M224,128a8,8,0,0,1-8,8H59.31l58.35,58.34a8,8,0,0,1-11.32,11.32l-72-72a8,8,0,0,1,0-11.32l72-72a8,8,0,0,1,11.32,11.32L59.31,120H216A8,8,0,0,1,224,128Z"></path>
                     </svg>
                 </button>
-                <h1 id="pageTitle" class="text-gray-800 dark:text-gray-200 text-lg font-bold leading-tight flex-1 text-center">Dashboard</h1>
+                
+                <!-- App Logo and Title -->
+                <div class="flex-1 flex items-center justify-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-pink-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                        💝
+                    </div>
+                    <h1 id="pageTitle" class="text-gray-800 dark:text-gray-200 text-lg font-bold leading-tight">Katie's BSS</h1>
+                </div>
+                
                 <div class="flex w-12 items-center justify-end">
                     <button id="addBtn" class="flex items-center justify-center rounded-full h-12 bg-transparent text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors p-0">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256">
@@ -125,6 +133,16 @@
                             </div>
 
                             <div>
+                                <label for="severityLevel" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Severity Level</label>
+                                <select id="severityLevel" class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200">
+                                    <option value="no-flag">🟢 No Flag - Routine</option>
+                                    <option value="green-flag">🟢 Green Flag - Positive</option>
+                                    <option value="yellow-flag">🟡 Yellow Flag - Caution</option>
+                                    <option value="red-flag">🔴 Red Flag - Urgent</option>
+                                </select>
+                            </div>
+
+                            <div>
                                 <label for="interactionDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date</label>
                                 <input type="date" id="interactionDate" class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200">
                             </div>
@@ -186,7 +204,23 @@
 
                         <!-- Report Results -->
                         <div id="reportResults" class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Report Results</h3>
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Report Results</h3>
+                                <div class="flex gap-2">
+                                    <button onclick="app.downloadReport('txt')" class="btn-secondary text-sm px-3 py-2" title="Download as TXT">
+                                        📄 TXT
+                                    </button>
+                                    <button onclick="app.downloadReport('pdf')" class="btn-secondary text-sm px-3 py-2" title="Download as PDF">
+                                        📕 PDF
+                                    </button>
+                                    <button onclick="app.downloadReport('docx')" class="btn-secondary text-sm px-3 py-2" title="Download as DOCX">
+                                        📘 DOCX
+                                    </button>
+                                    <button onclick="app.downloadReport('xlsx')" class="btn-secondary text-sm px-3 py-2" title="Download as XLSX">
+                                        📊 XLSX
+                                    </button>
+                                </div>
+                            </div>
                             <div id="reportContent">
                                 <!-- Report content will be populated by JavaScript -->
                             </div>
@@ -227,6 +261,20 @@
                     </button>
                 </div>
             </nav>
+
+            <!-- Footer -->
+            <footer class="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 py-4 px-4">
+                <div class="flex flex-col items-center gap-2">
+                    <!-- Thomson Innovations Logo placeholder -->
+                    <div class="w-12 h-12 bg-gray-800 dark:bg-gray-300 rounded-lg flex items-center justify-center font-bold text-white dark:text-gray-800">
+                        <span class="text-lg">Ti</span>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Thomson Innovations</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">All rights reserved 2025</p>
+                    </div>
+                </div>
+            </footer>
         </div>
 
         <!-- Modal for Adding New Student -->
@@ -272,16 +320,6 @@
                 </form>
             </div>
         </div>
-
-        <!-- Floating Action Button -->
-        <div class="fixed bottom-20 right-4">
-            <button id="fabBtn" class="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-lg transition-all duration-200 transform hover:scale-105">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256">
-                    <path d="M205.66,117.66a8,8,0,0,1-11.32,0L136,59.31V216a8,8,0,0,1-16,0V59.31L61.66,117.66a8,8,0,0,1-11.32-11.32l72-72a8,8,0,0,1,11.32,0l72,72A8,8,0,0,1,205.66,117.66Z"></path>
-                </svg>
-            </button>
-        </div>
-    </div>
 
     <script src="script.js"></script>
 </body>
