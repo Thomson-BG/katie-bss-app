@@ -260,6 +260,14 @@ class BSSApp {
         document.getElementById('pageTitle').textContent = titles[view] || 'Dashboard';
         this.currentView = view;
 
+        // Show/hide back button based on view
+        const backBtn = document.getElementById('backBtn');
+        if (view === 'dashboard') {
+            backBtn.style.visibility = 'hidden';
+        } else {
+            backBtn.style.visibility = 'visible';
+        }
+
         // Render view-specific content
         this.renderCurrentView();
     }
@@ -326,13 +334,18 @@ class BSSApp {
             const studentName = student ? student.name : 'Unknown Student';
             
             return `
-                <div class="interaction-item">
+                <div class="interaction-item cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-3 rounded-lg transition-colors" onclick="app.showInteractionDetails('${interaction.id}')">
                     <div class="interaction-icon">
                         ${this.getInteractionIcon(interaction.type)}
                     </div>
                     <div class="flex-1">
                         <p class="font-medium text-gray-800 dark:text-gray-200">${this.getInteractionTypeLabel(interaction.type)}</p>
                         <p class="text-sm text-gray-600 dark:text-gray-400">${studentName} • ${this.formatDate(interaction.date)}</p>
+                    </div>
+                    <div class="text-gray-400 dark:text-gray-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256">
+                            <path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"></path>
+                        </svg>
                     </div>
                 </div>
             `;
@@ -360,22 +373,29 @@ class BSSApp {
         }
 
         container.innerHTML = this.students.map(student => `
-            <div class="student-card" onclick="app.viewStudentProfile('${student.id}')">
-                <div class="student-avatar">
+            <div class="student-card">
+                <div class="student-avatar" onclick="app.viewStudentProfile('${student.id}')">
                     ${student.profileImage ? 
                         `<img src="${student.profileImage}" alt="${student.name}" class="w-full h-full object-cover rounded-full">` :
                         student.name.split(' ').map(n => n[0]).join('').toUpperCase()
                     }
                 </div>
-                <div class="flex-1">
+                <div class="flex-1" onclick="app.viewStudentProfile('${student.id}')">
                     <h3 class="font-semibold text-gray-800 dark:text-gray-200">${student.name}</h3>
                     <p class="text-gray-600 dark:text-gray-400">Grade ${student.grade}</p>
                     <p class="text-sm text-gray-500 dark:text-gray-500">ID: ${student.id}</p>
                 </div>
-                <div class="text-gray-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256">
-                        <path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"></path>
-                    </svg>
+                <div class="flex items-center gap-2">
+                    <button onclick="app.editStudent('${student.id}')" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors" title="Edit Student">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256">
+                            <path d="M227.31,73.37,182.63,28.69a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96A16,16,0,0,0,227.31,73.37ZM92.69,208H48V163.31l88-88L180.69,120ZM192,108.69,147.31,64l24-24L216,84.69Z"></path>
+                        </svg>
+                    </button>
+                    <button onclick="app.deleteStudent('${student.id}')" class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" title="Delete Student">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256">
+                            <path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z"></path>
+                        </svg>
+                    </button>
                 </div>
             </div>
         `).join('');
@@ -397,22 +417,29 @@ class BSSApp {
         }
 
         container.innerHTML = filteredStudents.map(student => `
-            <div class="student-card" onclick="app.viewStudentProfile('${student.id}')">
-                <div class="student-avatar">
+            <div class="student-card">
+                <div class="student-avatar" onclick="app.viewStudentProfile('${student.id}')">
                     ${student.profileImage ? 
                         `<img src="${student.profileImage}" alt="${student.name}" class="w-full h-full object-cover rounded-full">` :
                         student.name.split(' ').map(n => n[0]).join('').toUpperCase()
                     }
                 </div>
-                <div class="flex-1">
+                <div class="flex-1" onclick="app.viewStudentProfile('${student.id}')">
                     <h3 class="font-semibold text-gray-800 dark:text-gray-200">${student.name}</h3>
                     <p class="text-gray-600 dark:text-gray-400">Grade ${student.grade}</p>
                     <p class="text-sm text-gray-500 dark:text-gray-500">ID: ${student.id}</p>
                 </div>
-                <div class="text-gray-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256">
-                        <path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"></path>
-                    </svg>
+                <div class="flex items-center gap-2">
+                    <button onclick="app.editStudent('${student.id}')" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors" title="Edit Student">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256">
+                            <path d="M227.31,73.37,182.63,28.69a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96A16,16,0,0,0,227.31,73.37ZM92.69,208H48V163.31l88-88L180.69,120ZM192,108.69,147.31,64l24-24L216,84.69Z"></path>
+                        </svg>
+                    </button>
+                    <button onclick="app.deleteStudent('${student.id}')" class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" title="Delete Student">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256">
+                            <path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z"></path>
+                        </svg>
+                    </button>
                 </div>
             </div>
         `).join('');
@@ -712,6 +739,8 @@ class BSSApp {
         const name = document.getElementById('studentName').value.trim();
         const grade = document.getElementById('studentGrade').value;
         const id = document.getElementById('studentId').value.trim();
+        const form = document.getElementById('addStudentForm');
+        const isEditing = form.dataset.editingId;
 
         // Validation
         if (!name || !grade || !id) {
@@ -719,26 +748,74 @@ class BSSApp {
             return;
         }
 
-        // Check for duplicate ID
-        if (this.students.find(s => s.id === id)) {
-            this.showAlert('Student ID already exists', 'error');
-            return;
+        if (isEditing) {
+            // Editing existing student
+            const studentIndex = this.students.findIndex(s => s.id === isEditing);
+            if (studentIndex === -1) {
+                this.showAlert('Student not found', 'error');
+                return;
+            }
+
+            // Check for duplicate ID if ID was changed
+            if (id !== isEditing && this.students.find(s => s.id === id)) {
+                this.showAlert('Student ID already exists', 'error');
+                return;
+            }
+
+            // Update student
+            this.students[studentIndex] = {
+                ...this.students[studentIndex],
+                id,
+                name,
+                grade
+            };
+
+            // Update associated interactions if ID changed
+            if (id !== isEditing) {
+                this.interactions = this.interactions.map(interaction => 
+                    interaction.studentId === isEditing 
+                        ? { ...interaction, studentId: id }
+                        : interaction
+                );
+                this.supportPlans = this.supportPlans.map(plan => 
+                    plan.studentId === isEditing 
+                        ? { ...plan, studentId: id }
+                        : plan
+                );
+                this.documents = this.documents.map(doc => 
+                    doc.studentId === isEditing 
+                        ? { ...doc, studentId: id }
+                        : doc
+                );
+            }
+
+            this.showAlert('Student updated successfully', 'success');
+        } else {
+            // Adding new student
+            // Check for duplicate ID
+            if (this.students.find(s => s.id === id)) {
+                this.showAlert('Student ID already exists', 'error');
+                return;
+            }
+
+            const student = {
+                id,
+                name,
+                grade,
+                profileImage: null,
+                createdAt: new Date().toISOString()
+            };
+
+            this.students.push(student);
+            this.showAlert('Student added successfully', 'success');
         }
 
-        const student = {
-            id,
-            name,
-            grade,
-            profileImage: null,
-            createdAt: new Date().toISOString()
-        };
-
-        this.students.push(student);
         this.saveToLocalStorage();
-        this.showAlert('Student added successfully', 'success');
         
         // Reset form and hide modal
-        document.getElementById('addStudentForm').reset();
+        form.reset();
+        form.removeAttribute('data-editing-id');
+        form.querySelector('button[type="submit"]').textContent = 'Add Student';
         this.hideModal('addStudentModal');
         
         // Refresh current view if needed
@@ -827,6 +904,105 @@ class BSSApp {
             month: 'short',
             day: 'numeric'
         });
+    }
+
+    showInteractionDetails(interactionId) {
+        const interaction = this.interactions.find(i => i.id === interactionId);
+        if (!interaction) return;
+
+        const student = this.students.find(s => s.id === interaction.studentId);
+        const studentName = student ? student.name : 'Unknown Student';
+
+        const modalHtml = `
+            <div id="interactionDetailsModal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50">
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-lg mx-4">
+                    <div class="flex justify-between items-start mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Interaction Details</h3>
+                        <button onclick="app.closeInteractionDetails()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256">
+                                <path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 rounded-full bg-gray-100 dark:bg-gray-700">
+                                ${this.getInteractionIcon(interaction.type)}
+                            </div>
+                            <div>
+                                <h4 class="font-medium text-gray-800 dark:text-gray-200">${this.getInteractionTypeLabel(interaction.type)}</h4>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">${studentName}</p>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date</label>
+                            <p class="text-gray-800 dark:text-gray-200">${this.formatDate(interaction.date)}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
+                            <p class="text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">${interaction.notes || 'No notes provided'}</p>
+                        </div>
+                    </div>
+                    <div class="flex justify-end mt-6">
+                        <button onclick="app.closeInteractionDetails()" class="btn-secondary">Close</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+
+    closeInteractionDetails() {
+        const modal = document.getElementById('interactionDetailsModal');
+        if (modal) {
+            modal.remove();
+        }
+    }
+
+    editStudent(studentId) {
+        const student = this.students.find(s => s.id === studentId);
+        if (!student) return;
+
+        // Pre-fill the form with existing data
+        document.getElementById('studentName').value = student.name;
+        document.getElementById('studentGrade').value = student.grade;
+        document.getElementById('studentId').value = student.id;
+        
+        // Change the form behavior to edit mode
+        const form = document.getElementById('addStudentForm');
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.textContent = 'Update Student';
+        
+        // Store the original student ID for updating
+        form.dataset.editingId = student.id;
+        
+        this.showModal('addStudentModal');
+    }
+
+    deleteStudent(studentId) {
+        const student = this.students.find(s => s.id === studentId);
+        if (!student) return;
+
+        const confirmDelete = confirm(`Are you sure you want to delete ${student.name}? This action cannot be undone.`);
+        if (confirmDelete) {
+            // Remove student
+            this.students = this.students.filter(s => s.id !== studentId);
+            
+            // Remove associated interactions
+            this.interactions = this.interactions.filter(i => i.studentId !== studentId);
+            
+            // Remove associated support plans
+            this.supportPlans = this.supportPlans.filter(sp => sp.studentId !== studentId);
+            
+            // Remove associated documents
+            this.documents = this.documents.filter(doc => doc.studentId !== studentId);
+            
+            this.saveToLocalStorage();
+            this.renderCurrentView();
+            this.updateStats();
+            this.showAlert('Student deleted successfully', 'success');
+        }
     }
 }
 
