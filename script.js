@@ -9,7 +9,60 @@ class BSSApp {
         this.supportPlans = [];
         this.documents = [];
         
+        this.initSplashScreen();
         this.init();
+    }
+
+    initSplashScreen() {
+        // Set up splash screen functionality
+        setTimeout(() => {
+            // Play collision sound and flash effect
+            this.playCollisionEffect();
+        }, 2500); // Play sound when letters should collide
+
+        // Show logo after flash effect
+        setTimeout(() => {
+            const splashLogo = document.getElementById('splashLogo');
+            if (splashLogo) {
+                splashLogo.classList.remove('hidden');
+            }
+        }, 2800);
+
+        // Show text after collision
+        setTimeout(() => {
+            const splashText = document.getElementById('splashText');
+            if (splashText) {
+                splashText.classList.remove('hidden');
+            }
+        }, 6000);
+
+        // Remove splash screen
+        setTimeout(() => {
+            const splashScreen = document.getElementById('splashScreen');
+            if (splashScreen) {
+                splashScreen.classList.add('hidden');
+            }
+        }, 10000);
+    }
+
+    playCollisionEffect() {
+        const splashScreen = document.getElementById('splashScreen');
+        const collisionSound = document.getElementById('collisionSound');
+        
+        // Play sound
+        if (collisionSound) {
+            collisionSound.currentTime = 0;
+            collisionSound.volume = 0.3;
+            collisionSound.play().catch(e => console.log('Audio play failed:', e));
+        }
+
+        // Flash effect
+        if (splashScreen) {
+            splashScreen.style.animation = 'flash 0.3s ease-in-out';
+            setTimeout(() => {
+                splashScreen.style.animation = 'splashFadeOut 1s ease-in-out 6.5s forwards';
+            }, 300);
+        }
     }
 
     init() {
@@ -137,16 +190,27 @@ class BSSApp {
             this.handleAddButtonClick();
         });
 
-        // FAB button
-        document.getElementById('fabBtn').addEventListener('click', () => {
-            this.scrollToTop();
-        });
+        // Export button
+        const exportBtn = document.getElementById('exportBtn');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => {
+                this.showExportModal();
+            });
+        }
 
         // Search functionality
         const searchInput = document.getElementById('studentSearch');
         if (searchInput) {
             searchInput.addEventListener('input', (e) => {
                 this.filterStudents(e.target.value);
+            });
+        }
+
+        // Global search functionality
+        const globalSearch = document.getElementById('globalSearch');
+        if (globalSearch) {
+            globalSearch.addEventListener('input', (e) => {
+                this.performGlobalSearch(e.target.value);
             });
         }
 
@@ -257,7 +321,12 @@ class BSSApp {
             reports: 'Reports'
         };
 
-        document.getElementById('pageTitle').textContent = titles[view] || 'Dashboard';
+        const pageTitle = document.getElementById('pageTitle');
+        if (view === 'dashboard') {
+            pageTitle.textContent = "Katie's BSS";
+        } else {
+            pageTitle.textContent = titles[view] || 'Dashboard';
+        }
         this.currentView = view;
 
         // Show/hide back button based on view
@@ -266,6 +335,14 @@ class BSSApp {
             backBtn.style.visibility = 'hidden';
         } else {
             backBtn.style.visibility = 'visible';
+        }
+
+        // Show/hide add button based on view
+        const addBtn = document.getElementById('addBtn');
+        if (view === 'reports') {
+            addBtn.style.display = 'none';
+        } else {
+            addBtn.style.display = 'flex';
         }
 
         // Render view-specific content
@@ -613,6 +690,7 @@ class BSSApp {
             id: Date.now().toString(),
             studentId: document.getElementById('studentSelect').value,
             type: document.getElementById('interactionType').value,
+            severity: document.getElementById('severityLevel').value || 'no-flag',
             date: document.getElementById('interactionDate').value,
             notes: document.getElementById('interactionNotes').value,
             createdAt: new Date().toISOString()
@@ -626,7 +704,7 @@ class BSSApp {
 
         this.interactions.push(interaction);
         this.saveToLocalStorage();
-        this.showAlert('Interaction logged successfully', 'success');
+        this.showAlert('✅ Interaction logged successfully', 'success');
         
         // Reset form
         form.reset();
@@ -671,6 +749,15 @@ class BSSApp {
         if (interactionType) {
             filteredInteractions = filteredInteractions.filter(i => i.type === interactionType);
         }
+
+        // Store current report data for downloads
+        this.currentReportData = {
+            interactions: filteredInteractions,
+            dateRange,
+            studentId,
+            interactionType,
+            generatedAt: new Date().toISOString()
+        };
 
         // Generate report content
         this.displayReportResults(filteredInteractions, dateRange);
@@ -742,11 +829,16 @@ class BSSApp {
                         ${interactions.slice(0, 10).map(interaction => {
                             const student = this.students.find(s => s.id === interaction.studentId);
                             return `
-                                <div class="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                                <div class="p-3 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" onclick="app.showInteractionDetails('${interaction.id}')">
                                     <div class="flex justify-between items-start">
                                         <div>
                                             <p class="font-medium text-gray-800 dark:text-gray-200">${this.getInteractionTypeLabel(interaction.type)}</p>
                                             <p class="text-sm text-gray-600 dark:text-gray-400">${student?.name || 'Unknown Student'} • ${this.formatDate(interaction.date)}</p>
+                                        </div>
+                                        <div class="text-gray-400 dark:text-gray-500">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256">
+                                                <path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"></path>
+                                            </svg>
                                         </div>
                                     </div>
                                     <p class="text-sm text-gray-700 dark:text-gray-300 mt-2">${interaction.notes}</p>
@@ -814,7 +906,7 @@ class BSSApp {
                 );
             }
 
-            this.showAlert('Student updated successfully', 'success');
+            this.showAlert('✅ Student updated successfully', 'success');
         } else {
             // Adding new student
             // Check for duplicate ID
@@ -832,7 +924,7 @@ class BSSApp {
             };
 
             this.students.push(student);
-            this.showAlert('Student added successfully', 'success');
+            this.showAlert('✅ Student added successfully', 'success');
         }
 
         this.saveToLocalStorage();
@@ -858,6 +950,9 @@ class BSSApp {
                 break;
             case 'logInteraction':
                 // Already on the add interaction page
+                break;
+            case 'reports':
+                // No add button functionality for reports
                 break;
             default:
                 this.navigateTo('logInteraction');
@@ -1026,7 +1121,7 @@ class BSSApp {
             this.saveToLocalStorage();
             this.renderCurrentView();
             this.updateStats();
-            this.showAlert('Student deleted successfully', 'success');
+            this.showAlert('🗑️ Student deleted successfully', 'success');
         }
     }
 
@@ -1289,7 +1384,7 @@ BSSApp.prototype.saveSupportPlan = function() {
     this.saveToLocalStorage();
     this.renderSupportPlans();
     this.closeSupportPlanModal();
-    this.showAlert('Support plan saved successfully', 'success');
+    this.showAlert('✅ Support plan saved successfully', 'success');
 };
 
 BSSApp.prototype.saveDocument = function() {
@@ -1319,7 +1414,7 @@ BSSApp.prototype.saveDocument = function() {
     this.saveToLocalStorage();
     this.renderDocuments();
     this.closeDocumentModal();
-    this.showAlert('Document uploaded successfully', 'success');
+    this.showAlert('📄 Document uploaded successfully', 'success');
 };
 
 BSSApp.prototype.closeSupportPlanModal = function() {
@@ -1354,6 +1449,661 @@ BSSApp.prototype.deleteDocument = function(docId) {
         this.renderDocuments();
         this.showAlert('Document deleted successfully', 'success');
     }
+};
+
+BSSApp.prototype.downloadReport = function(format) {
+    if (!this.currentReportData) {
+        this.showAlert('No report data available. Please generate a report first.', 'error');
+        return;
+    }
+
+    const reportData = this.currentReportData;
+    const studentName = reportData.studentId ? 
+        this.students.find(s => s.id === reportData.studentId)?.name || 'Unknown Student' : 
+        'All Students';
+
+    let content = '';
+    let filename = '';
+    let mimeType = '';
+
+    switch (format) {
+        case 'txt':
+            content = this.generateTextReport(reportData, studentName);
+            filename = `BSS_Report_${new Date().toISOString().split('T')[0]}.txt`;
+            mimeType = 'text/plain';
+            break;
+        case 'pdf':
+            // Note: This is a simplified PDF generation - in production, you'd use a library like jsPDF
+            content = this.generateTextReport(reportData, studentName);
+            filename = `BSS_Report_${new Date().toISOString().split('T')[0]}.pdf`;
+            mimeType = 'application/pdf';
+            this.showAlert('PDF generation requires additional library. Downloading as TXT instead.', 'warning');
+            break;
+        case 'docx':
+            content = this.generateTextReport(reportData, studentName);
+            filename = `BSS_Report_${new Date().toISOString().split('T')[0]}.docx`;
+            mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+            this.showAlert('DOCX generation requires additional library. Downloading as TXT instead.', 'warning');
+            break;
+        case 'xlsx':
+            content = this.generateCSVReport(reportData, studentName);
+            filename = `BSS_Report_${new Date().toISOString().split('T')[0]}.csv`;
+            mimeType = 'text/csv';
+            this.showAlert('XLSX generation requires additional library. Downloading as CSV instead.', 'warning');
+            break;
+    }
+
+    // Create and trigger download
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    this.showAlert(`📥 Report downloaded as ${filename}`, 'success');
+};
+
+BSSApp.prototype.generateTextReport = function(reportData, studentName) {
+    const { interactions, dateRange, interactionType } = reportData;
+    let content = `Katie's Behavior Support Specialist - Report\n`;
+    content += `Generated: ${new Date().toLocaleDateString()}\n`;
+    content += `Date Range: Last ${dateRange} days\n`;
+    content += `Student: ${studentName}\n`;
+    content += `Interaction Type: ${interactionType ? this.getInteractionTypeLabel(interactionType) : 'All Types'}\n`;
+    content += `\n${'='.repeat(50)}\n\n`;
+
+    if (interactions.length === 0) {
+        content += `No interactions found for the selected criteria.\n`;
+        return content;
+    }
+
+    // Summary
+    content += `SUMMARY\n`;
+    content += `${'='.repeat(20)}\n`;
+    content += `Total Interactions: ${interactions.length}\n`;
+    
+    // Group by type
+    const byType = {};
+    interactions.forEach(interaction => {
+        if (!byType[interaction.type]) {
+            byType[interaction.type] = [];
+        }
+        byType[interaction.type].push(interaction);
+    });
+
+    content += `By Type:\n`;
+    Object.keys(byType).forEach(type => {
+        content += `  - ${this.getInteractionTypeLabel(type)}: ${byType[type].length}\n`;
+    });
+
+    content += `Students Involved: ${new Set(interactions.map(i => i.studentId)).size}\n\n`;
+
+    // Detailed interactions
+    content += `DETAILED INTERACTIONS\n`;
+    content += `${'='.repeat(30)}\n\n`;
+
+    interactions.forEach((interaction, index) => {
+        const student = this.students.find(s => s.id === interaction.studentId);
+        content += `${index + 1}. ${this.getInteractionTypeLabel(interaction.type)}\n`;
+        content += `   Student: ${student?.name || 'Unknown Student'}\n`;
+        content += `   Date: ${this.formatDate(interaction.date)}\n`;
+        content += `   Notes: ${interaction.notes}\n\n`;
+    });
+
+    return content;
+};
+
+BSSApp.prototype.generateCSVReport = function(reportData, studentName) {
+    const { interactions } = reportData;
+    let csv = 'Date,Student,Type,Notes\n';
+    
+    interactions.forEach(interaction => {
+        const student = this.students.find(s => s.id === interaction.studentId);
+        const studentName = student?.name || 'Unknown Student';
+        const type = this.getInteractionTypeLabel(interaction.type);
+        const notes = interaction.notes.replace(/"/g, '""'); // Escape quotes
+        csv += `"${interaction.date}","${studentName}","${type}","${notes}"\n`;
+    });
+
+    return csv;
+};
+
+BSSApp.prototype.viewDocument = function(docId) {
+    const doc = this.documents.find(d => d.id === docId);
+    if (!doc) return;
+
+    // Create a modal to view document content
+    const modalHtml = `
+        <div id="documentViewModal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50">
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">📄 ${doc.name}</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">${doc.fileType.toUpperCase()} • ${this.formatFileSize(doc.fileSize)}</p>
+                    </div>
+                    <button onclick="app.closeDocumentViewModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256">
+                            <path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+                    <p class="text-gray-700 dark:text-gray-300">📁 Document preview is not available in this demo version.</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">In a full implementation, document content would be displayed here based on the file type.</p>
+                    <div class="mt-4 flex gap-2">
+                        <button onclick="app.downloadDocument('${doc.id}')" class="btn-primary text-sm">
+                            📥 Download Document
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+};
+
+BSSApp.prototype.closeDocumentViewModal = function() {
+    const modal = document.getElementById('documentViewModal');
+    if (modal) modal.remove();
+};
+
+BSSApp.prototype.downloadDocument = function(docId) {
+    const doc = this.documents.find(d => d.id === docId);
+    if (!doc) return;
+
+    // In a real application, this would download the actual file
+    // For demo purposes, we'll create a placeholder file
+    const content = `Document: ${doc.name}\nFile Type: ${doc.fileType}\nUploaded: ${this.formatDate(doc.createdAt)}\nStudent: ${this.currentStudent?.name || 'N/A'}\n\nThis is a placeholder document created in Katie's BSS App demo.\nIn a real implementation, the original document content would be downloaded.`;
+    
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = doc.fileName;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    this.showAlert(`📥 Downloaded ${doc.name}`, 'success');
+};
+
+BSSApp.prototype.performGlobalSearch = function(searchTerm) {
+    if (!searchTerm.trim()) {
+        this.renderRecentActivity();
+        return;
+    }
+
+    const term = searchTerm.toLowerCase();
+    const results = [];
+
+    // Search students
+    this.students.forEach(student => {
+        if (student.name.toLowerCase().includes(term) || 
+            student.id.toLowerCase().includes(term) || 
+            student.grade.toString().includes(term)) {
+            results.push({
+                type: '👤 Student',
+                title: student.name,
+                subtitle: `Grade ${student.grade} • ID: ${student.id}`,
+                action: () => this.viewStudentProfile(student.id),
+                date: student.createdAt
+            });
+        }
+    });
+
+    // Search interactions
+    this.interactions.forEach(interaction => {
+        const student = this.students.find(s => s.id === interaction.studentId);
+        if (interaction.notes.toLowerCase().includes(term) || 
+            this.getInteractionTypeLabel(interaction.type).toLowerCase().includes(term) ||
+            (student && student.name.toLowerCase().includes(term))) {
+            results.push({
+                type: this.getInteractionIcon(interaction.type) + ' Interaction',
+                title: this.getInteractionTypeLabel(interaction.type),
+                subtitle: `${student?.name || 'Unknown Student'} • ${this.formatDate(interaction.date)}`,
+                action: () => this.showInteractionDetails(interaction.id),
+                date: interaction.date,
+                severity: interaction.severity || 'no-flag'
+            });
+        }
+    });
+
+    // Search support plans
+    this.supportPlans.forEach(plan => {
+        if (plan.title.toLowerCase().includes(term) || 
+            (plan.description && plan.description.toLowerCase().includes(term))) {
+            const student = this.students.find(s => s.id === plan.studentId);
+            results.push({
+                type: '📋 Support Plan',
+                title: plan.title,
+                subtitle: `${student?.name || 'Unknown Student'} • ${this.formatDate(plan.createdAt)}`,
+                action: () => {
+                    this.viewStudentProfile(plan.studentId);
+                    setTimeout(() => this.switchTab('support-plans'), 100);
+                },
+                date: plan.createdAt
+            });
+        }
+    });
+
+    // Search documents
+    this.documents.forEach(doc => {
+        if (doc.name.toLowerCase().includes(term) || 
+            doc.fileName.toLowerCase().includes(term)) {
+            const student = this.students.find(s => s.id === doc.studentId);
+            results.push({
+                type: '📄 Document',
+                title: doc.name,
+                subtitle: `${student?.name || 'Unknown Student'} • ${doc.fileType.toUpperCase()}`,
+                action: () => {
+                    this.viewStudentProfile(doc.studentId);
+                    setTimeout(() => this.switchTab('documents'), 100);
+                },
+                date: doc.createdAt
+            });
+        }
+    });
+
+    // Sort results by relevance and date
+    results.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    this.displaySearchResults(results, searchTerm);
+};
+
+BSSApp.prototype.displaySearchResults = function(results, searchTerm) {
+    const container = document.getElementById('recentActivityList');
+    if (!container) return;
+
+    if (results.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                <div class="text-4xl mb-4">🔍</div>
+                <p class="text-lg font-medium mb-2">No results found</p>
+                <p class="text-sm">Try searching for student names, interaction notes, or document titles</p>
+            </div>
+        `;
+        return;
+    }
+
+    const resultsHtml = `
+        <div class="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <p class="text-blue-800 dark:text-blue-200 font-medium">
+                🔍 Found ${results.length} result${results.length !== 1 ? 's' : ''} for "${searchTerm}"
+            </p>
+        </div>
+        ${results.slice(0, 10).map(result => `
+            <div class="search-result-item cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-3 rounded-lg transition-colors border border-gray-200 dark:border-gray-700" onclick="event.preventDefault(); (${result.action.toString()})();">
+                <div class="flex items-start gap-3">
+                    <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-sm">
+                        ${result.type.split(' ')[0]}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <p class="font-medium text-gray-800 dark:text-gray-200 truncate">${result.title}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">${result.subtitle}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">${result.type}</p>
+                                ${result.severity && result.severity !== 'no-flag' ? `
+                                    <div class="mt-2 inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs ${this.getSeverityClasses(result.severity)}">
+                                        ${this.getSeverityIcon(result.severity)} ${this.getSeverityLabel(result.severity)}
+                                    </div>
+                                ` : ''}
+                            </div>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256" class="text-gray-400 dark:text-gray-500 flex-shrink-0">
+                                <path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `).join('')}
+        ${results.length > 10 ? `
+            <div class="text-center py-3 text-gray-500 dark:text-gray-400 text-sm">
+                ... and ${results.length - 10} more results
+            </div>
+        ` : ''}
+    `;
+
+    container.innerHTML = resultsHtml;
+};
+
+BSSApp.prototype.getSeverityIcon = function(severity) {
+    const icons = {
+        'red-flag': '🔴',
+        'yellow-flag': '🟡',
+        'green-flag': '🟢',
+        'no-flag': '🔵'
+    };
+    return icons[severity] || icons['no-flag'];
+};
+
+BSSApp.prototype.getSeverityLabel = function(severity) {
+    const labels = {
+        'red-flag': 'Urgent',
+        'yellow-flag': 'Caution',
+        'green-flag': 'Positive',
+        'no-flag': 'Routine'
+    };
+    return labels[severity] || 'Routine';
+};
+
+BSSApp.prototype.getSeverityClasses = function(severity) {
+    const classes = {
+        'red-flag': 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200',
+        'yellow-flag': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200',
+        'green-flag': 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200',
+        'no-flag': 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200'
+    };
+    return classes[severity] || classes['no-flag'];
+};
+
+BSSApp.prototype.showExportModal = function() {
+    const modalHtml = `
+        <div id="exportModal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50">
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">📥 Export Data</h3>
+                <p class="text-gray-600 dark:text-gray-400 mb-4">Choose what data to export:</p>
+                <div class="space-y-3 mb-6">
+                    <label class="flex items-center">
+                        <input type="checkbox" id="exportStudents" checked class="mr-3">
+                        <span class="text-gray-800 dark:text-gray-200">👤 Students (${this.students.length})</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" id="exportInteractions" checked class="mr-3">
+                        <span class="text-gray-800 dark:text-gray-200">📝 Interactions (${this.interactions.length})</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" id="exportSupportPlans" checked class="mr-3">
+                        <span class="text-gray-800 dark:text-gray-200">📋 Support Plans (${this.supportPlans.length})</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" id="exportDocuments" checked class="mr-3">
+                        <span class="text-gray-800 dark:text-gray-200">📄 Documents (${this.documents.length})</span>
+                    </label>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Export Format:</label>
+                    <select id="exportFormat" class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200">
+                        <option value="json">JSON (Complete Data)</option>
+                        <option value="csv">CSV (Tabular Data)</option>
+                        <option value="txt">Text Summary</option>
+                    </select>
+                </div>
+                <div class="flex gap-3 pt-4">
+                    <button onclick="app.exportData()" class="btn-primary flex-1">📥 Export</button>
+                    <button onclick="app.closeExportModal()" class="btn-secondary flex-1">Cancel</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+};
+
+BSSApp.prototype.closeExportModal = function() {
+    const modal = document.getElementById('exportModal');
+    if (modal) modal.remove();
+};
+
+BSSApp.prototype.exportData = function() {
+    const includeStudents = document.getElementById('exportStudents').checked;
+    const includeInteractions = document.getElementById('exportInteractions').checked;
+    const includeSupportPlans = document.getElementById('exportSupportPlans').checked;
+    const includeDocuments = document.getElementById('exportDocuments').checked;
+    const format = document.getElementById('exportFormat').value;
+
+    const exportData = {
+        exportDate: new Date().toISOString(),
+        appName: "Katie's Behavior Support Specialist App",
+        version: "1.0.0"
+    };
+
+    if (includeStudents) exportData.students = this.students;
+    if (includeInteractions) exportData.interactions = this.interactions;
+    if (includeSupportPlans) exportData.supportPlans = this.supportPlans;
+    if (includeDocuments) exportData.documents = this.documents;
+
+    let content = '';
+    let filename = '';
+    let mimeType = '';
+
+    const timestamp = new Date().toISOString().split('T')[0];
+
+    switch (format) {
+        case 'json':
+            content = JSON.stringify(exportData, null, 2);
+            filename = `katie_bss_export_${timestamp}.json`;
+            mimeType = 'application/json';
+            break;
+        case 'csv':
+            content = this.generateCSVExport(exportData);
+            filename = `katie_bss_export_${timestamp}.csv`;
+            mimeType = 'text/csv';
+            break;
+        case 'txt':
+            content = this.generateTextExport(exportData);
+            filename = `katie_bss_export_${timestamp}.txt`;
+            mimeType = 'text/plain';
+            break;
+    }
+
+    // Create and trigger download
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    this.closeExportModal();
+    this.showAlert(`📥 Data exported successfully as ${filename}`, 'success');
+};
+
+BSSApp.prototype.generateCSVExport = function(exportData) {
+    let csv = '';
+
+    if (exportData.students) {
+        csv += 'STUDENTS\n';
+        csv += 'ID,Name,Grade,Created Date\n';
+        exportData.students.forEach(student => {
+            csv += `"${student.id}","${student.name}","${student.grade}","${student.createdAt}"\n`;
+        });
+        csv += '\n';
+    }
+
+    if (exportData.interactions) {
+        csv += 'INTERACTIONS\n';
+        csv += 'Date,Student,Type,Severity,Notes\n';
+        exportData.interactions.forEach(interaction => {
+            const student = this.students.find(s => s.id === interaction.studentId);
+            const notes = interaction.notes.replace(/"/g, '""');
+            csv += `"${interaction.date}","${student?.name || 'Unknown'}","${this.getInteractionTypeLabel(interaction.type)}","${this.getSeverityLabel(interaction.severity || 'no-flag')}","${notes}"\n`;
+        });
+        csv += '\n';
+    }
+
+    if (exportData.supportPlans) {
+        csv += 'SUPPORT PLANS\n';
+        csv += 'Student,Title,Description,Created Date\n';
+        exportData.supportPlans.forEach(plan => {
+            const student = this.students.find(s => s.id === plan.studentId);
+            const description = (plan.description || '').replace(/"/g, '""');
+            csv += `"${student?.name || 'Unknown'}","${plan.title}","${description}","${plan.createdAt}"\n`;
+        });
+    }
+
+    return csv;
+};
+
+BSSApp.prototype.generateTextExport = function(exportData) {
+    let content = `Katie's Behavior Support Specialist - Data Export\n`;
+    content += `Generated: ${new Date().toLocaleString()}\n`;
+    content += `${'='.repeat(60)}\n\n`;
+
+    if (exportData.students) {
+        content += `STUDENTS (${exportData.students.length})\n`;
+        content += `${'='.repeat(20)}\n`;
+        exportData.students.forEach(student => {
+            content += `• ${student.name} (Grade ${student.grade}) - ID: ${student.id}\n`;
+        });
+        content += '\n';
+    }
+
+    if (exportData.interactions) {
+        content += `INTERACTIONS (${exportData.interactions.length})\n`;
+        content += `${'='.repeat(25)}\n`;
+        exportData.interactions.forEach(interaction => {
+            const student = this.students.find(s => s.id === interaction.studentId);
+            content += `${this.formatDate(interaction.date)} - ${this.getInteractionTypeLabel(interaction.type)}\n`;
+            content += `Student: ${student?.name || 'Unknown'}\n`;
+            content += `Severity: ${this.getSeverityLabel(interaction.severity || 'no-flag')}\n`;
+            content += `Notes: ${interaction.notes}\n\n`;
+        });
+    }
+
+    if (exportData.supportPlans) {
+        content += `SUPPORT PLANS (${exportData.supportPlans.length})\n`;
+        content += `${'='.repeat(28)}\n`;
+        exportData.supportPlans.forEach(plan => {
+            const student = this.students.find(s => s.id === plan.studentId);
+            content += `${plan.title}\n`;
+            content += `Student: ${student?.name || 'Unknown'}\n`;
+            content += `Created: ${this.formatDate(plan.createdAt)}\n`;
+            if (plan.description) {
+                content += `Description: ${plan.description}\n`;
+            }
+            content += '\n';
+        });
+    }
+
+    return content;
+};
+
+BSSApp.prototype.editSupportPlan = function(planId) {
+    const plan = this.supportPlans.find(p => p.id === planId);
+    if (!plan) return;
+
+    const modalHtml = `
+        <div id="editSupportPlanModal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50">
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">📝 Edit Support Plan</h3>
+                <form id="editSupportPlanForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Plan Title</label>
+                        <input type="text" id="editPlanTitle" value="${plan.title}" required class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
+                        <textarea id="editPlanDescription" rows="3" class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200">${plan.description || ''}</textarea>
+                    </div>
+                    <div class="flex gap-3 pt-4">
+                        <button type="submit" class="btn-primary flex-1">Update Plan</button>
+                        <button type="button" onclick="app.closeEditSupportPlanModal()" class="btn-secondary flex-1">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    document.getElementById('editSupportPlanForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        this.updateSupportPlan(planId);
+    });
+};
+
+BSSApp.prototype.closeEditSupportPlanModal = function() {
+    const modal = document.getElementById('editSupportPlanModal');
+    if (modal) modal.remove();
+};
+
+BSSApp.prototype.updateSupportPlan = function(planId) {
+    const title = document.getElementById('editPlanTitle').value.trim();
+    const description = document.getElementById('editPlanDescription').value.trim();
+    
+    if (!title) {
+        this.showAlert('Please enter a plan title', 'error');
+        return;
+    }
+
+    const planIndex = this.supportPlans.findIndex(p => p.id === planId);
+    if (planIndex === -1) return;
+
+    this.supportPlans[planIndex] = {
+        ...this.supportPlans[planIndex],
+        title,
+        description,
+        updatedAt: new Date().toISOString()
+    };
+
+    this.saveToLocalStorage();
+    this.renderSupportPlans();
+    this.closeEditSupportPlanModal();
+    this.showAlert('✅ Support plan updated successfully', 'success');
+};
+
+BSSApp.prototype.viewSupportPlan = function(planId) {
+    const plan = this.supportPlans.find(p => p.id === planId);
+    if (!plan) return;
+
+    const modalHtml = `
+        <div id="viewSupportPlanModal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50">
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">📋 ${plan.title}</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Created: ${this.formatDate(plan.createdAt)}</p>
+                    </div>
+                    <button onclick="app.closeViewSupportPlanModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256">
+                            <path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="space-y-4">
+                    ${plan.description ? `
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                            <div class="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+                                <p class="text-gray-800 dark:text-gray-200">${plan.description}</p>
+                            </div>
+                        </div>
+                    ` : ''}
+                    ${plan.fileName ? `
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Attached File</label>
+                            <div class="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+                                <p class="text-gray-800 dark:text-gray-200">📎 ${plan.fileName}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">Size: ${this.formatFileSize(plan.fileSize)}</p>
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+                <div class="flex justify-end mt-6 gap-3">
+                    <button onclick="app.editSupportPlan('${plan.id}'); app.closeViewSupportPlanModal();" class="btn-primary text-sm">Edit Plan</button>
+                    <button onclick="app.closeViewSupportPlanModal()" class="btn-secondary text-sm">Close</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+};
+
+BSSApp.prototype.closeViewSupportPlanModal = function() {
+    const modal = document.getElementById('viewSupportPlanModal');
+    if (modal) modal.remove();
 };
 
 // Initialize the app when DOM is loaded
