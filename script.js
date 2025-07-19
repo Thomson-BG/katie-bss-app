@@ -20,6 +20,14 @@ class BSSApp {
             this.playCollisionEffect();
         }, 2500); // Play sound when letters should collide
 
+        // Show logo after flash effect
+        setTimeout(() => {
+            const splashLogo = document.getElementById('splashLogo');
+            if (splashLogo) {
+                splashLogo.classList.remove('hidden');
+            }
+        }, 2800);
+
         // Show text after collision
         setTimeout(() => {
             const splashText = document.getElementById('splashText');

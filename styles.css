@@ -589,6 +589,37 @@ button {
     animation: slideInRight 2s ease-out 0.5s both;
 }
 
+.splash-logo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+    animation: logoAppear 0.8s ease-out 2.8s both;
+}
+
+.splash-logo-icon {
+    width: 6rem;
+    height: 6rem;
+    background: linear-gradient(135deg, #ec4899, #9333ea);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.splash-logo-text {
+    color: #ffffff;
+    font-size: 2rem;
+    font-weight: 700;
+    text-align: center;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
 .splash-text {
     color: #ffffff;
     font-size: 1.5rem;
@@ -640,6 +671,21 @@ button {
     100% {
         opacity: 0;
         pointer-events: none;
+    }
+}
+
+@keyframes logoAppear {
+    0% {
+        opacity: 0;
+        transform: scale(0.5) translateY(20px);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.1) translateY(0);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
     }
 }
 
