@@ -8,6 +8,20 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <!-- Splash Screen -->
+    <div id="splashScreen" class="splash-screen">
+        <div class="splash-content">
+            <div class="splash-letters">
+                <div class="letter letter-t">T</div>
+                <div class="letter letter-i">i</div>
+            </div>
+            <div id="splashText" class="splash-text hidden">Thomson Innovation</div>
+        </div>
+        <audio id="collisionSound" preload="auto">
+            <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmEbBTSH0fPTgC0GH23A7+OZRQ0VZLnl4qBLCwpKoeDirWcxBz2L0+zNYyoJLm+qoY10tPzh3m2cOqGlhHmtxefc1l2Wn1WM3i/LgHWnqQXx8YeMdKuqbPqRfKdPQY/d8qiBKwjdT3aq6/PY3U7wVIa9gLWMZnxTnR/Zq6Gm5AYO6Y0qhW6vBzFi3lGIvYa9nJWPYLOg2qHY4EjvYKSKlhOOuO+CRkSHiJ+3rLKJhfSb3WFf4jhfkJSNqKqPaVqzlnakVrIzYJ2uq6eYhKfO3FWPvHl1gJOuqKVgcKvIhb6wqKqB1lOKrLm/4mGmYLqGnY5fhCyO2GaEz+K8O/2d06mgO2ijlFWdyoXvfKJN93Bz6+T9lKqKWqKV4CexFNKPg5Fg/m6D5vtZkqGdVNp3w+4wZm/L4p91lkaVfBvr4UOQZGy8zG/E6w==" type="audio/wav">
+        </audio>
+    </div>
+
     <!-- Dark Mode Toggle -->
     <div class="fixed top-4 right-4 z-50">
         <button id="darkModeToggle" class="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 p-4 rounded-full shadow-lg transition-colors duration-200 w-14 h-14 flex items-center justify-center">
@@ -41,11 +55,16 @@
                 </div>
                 
                 <div class="flex w-12 items-center justify-end">
-                    <button id="addBtn" class="flex items-center justify-center rounded-full h-12 bg-transparent text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors p-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256">
-                            <path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"></path>
-                        </svg>
-                    </button>
+                    <div class="relative">
+                        <button id="addBtn" class="flex items-center justify-center rounded-full h-12 bg-transparent text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors p-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256">
+                                <path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"></path>
+                            </svg>
+                        </button>
+                        <button id="exportBtn" class="flex items-center justify-center rounded-full h-8 w-8 bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ml-2" title="Export Data">
+                            📥
+                        </button>
+                    </div>
                 </div>
             </header>
 
@@ -75,6 +94,17 @@
                         <!-- Recent Activity -->
                         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                             <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Recent Activity</h3>
+                            
+                            <!-- Quick Search -->
+                            <div class="mb-4">
+                                <input 
+                                    type="text" 
+                                    id="globalSearch" 
+                                    placeholder="🔍 Quick search across students, interactions, and notes..." 
+                                    class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                >
+                            </div>
+                            
                             <div id="recentActivityList" class="space-y-3">
                                 <!-- Activity items will be populated by JavaScript -->
                             </div>
