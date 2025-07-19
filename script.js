@@ -495,14 +495,19 @@ class BSSApp {
                     ${studentInteractions.length === 0 ? 
                         '<p class="text-gray-500 dark:text-gray-400 text-center py-4">No interactions recorded</p>' :
                         studentInteractions.map(interaction => `
-                            <div class="interaction-item">
+                            <div class="interaction-item cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-3 rounded-lg transition-colors" onclick="app.showInteractionDetails('${interaction.id}')">
                                 <div class="interaction-icon">
                                     ${this.getInteractionIcon(interaction.type)}
                                 </div>
                                 <div class="flex-1">
                                     <p class="font-medium text-gray-800 dark:text-gray-200">${this.getInteractionTypeLabel(interaction.type)}</p>
                                     <p class="text-sm text-gray-600 dark:text-gray-400">${this.formatDate(interaction.date)}</p>
-                                    <p class="text-sm text-gray-700 dark:text-gray-300 mt-1">${interaction.notes}</p>
+                                    <p class="text-sm text-gray-700 dark:text-gray-300 mt-1 line-clamp-2">${interaction.notes}</p>
+                                </div>
+                                <div class="text-gray-400 dark:text-gray-500">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256">
+                                        <path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"></path>
+                                    </svg>
                                 </div>
                             </div>
                         `).join('')
@@ -510,13 +515,33 @@ class BSSApp {
                 </div>
 
                 <div id="supportPlansTab" class="tab-content hidden">
-                    <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4">Support Plans</h3>
-                    <p class="text-gray-500 dark:text-gray-400 text-center py-4">No support plans created</p>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200">Support Plans</h3>
+                        <button onclick="app.showSupportPlanUpload()" class="btn-primary text-sm px-3 py-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256" class="mr-2">
+                                <path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"></path>
+                            </svg>
+                            Add Plan
+                        </button>
+                    </div>
+                    <div id="supportPlansList">
+                        <!-- Support plans will be rendered here -->
+                    </div>
                 </div>
 
                 <div id="documentsTab" class="tab-content hidden">
-                    <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4">Documents</h3>
-                    <p class="text-gray-500 dark:text-gray-400 text-center py-4">No documents uploaded</p>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200">Documents</h3>
+                        <button onclick="app.showDocumentUpload()" class="btn-primary text-sm px-3 py-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256" class="mr-2">
+                                <path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"></path>
+                            </svg>
+                            Add Document
+                        </button>
+                    </div>
+                    <div id="documentsList">
+                        <!-- Documents will be rendered here -->
+                    </div>
                 </div>
             </div>
         `;
@@ -1004,7 +1029,332 @@ class BSSApp {
             this.showAlert('Student deleted successfully', 'success');
         }
     }
+
+    switchTab(tabName) {
+        // Hide all tab contents
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.add('hidden');
+        });
+
+        // Remove active class from all tab buttons
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+
+        // Show selected tab content
+        const targetTab = document.getElementById(`${tabName}Tab`);
+        if (targetTab) {
+            targetTab.classList.remove('hidden');
+        }
+
+        // Add active class to clicked button
+        event.target.classList.add('active');
+
+        // Render tab-specific content
+        this.renderTabContent(tabName);
+    }
+
+    renderTabContent(tabName) {
+        if (!this.currentStudent) return;
+
+        switch (tabName) {
+            case 'interactions':
+                // Already rendered in renderStudentProfile
+                break;
+            case 'support-plans':
+                this.renderSupportPlans();
+                break;
+            case 'documents':
+                this.renderDocuments();
+                break;
+        }
+    }
+
+    renderSupportPlans() {
+        const container = document.getElementById('supportPlansList');
+        if (!container) return;
+
+        const studentPlans = this.supportPlans.filter(plan => plan.studentId === this.currentStudent.id);
+        
+        if (studentPlans.length === 0) {
+            container.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center py-8">No support plans created</p>';
+            return;
+        }
+
+        container.innerHTML = studentPlans.map(plan => `
+            <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-3">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <h4 class="font-semibold text-gray-800 dark:text-gray-200">${plan.title}</h4>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">${plan.description}</p>
+                        <div class="flex items-center gap-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
+                            <span>Created: ${this.formatDate(plan.createdAt)}</span>
+                            ${plan.fileSize ? `<span>Size: ${this.formatFileSize(plan.fileSize)}</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 ml-4">
+                        ${plan.filePath ? `
+                            <button onclick="app.viewSupportPlan('${plan.id}')" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors" title="View Plan">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256">
+                                    <path d="M247.31,124.76c-.35-.79-8.82-19.58-27.65-38.41C194.57,61.26,162.88,48,128,48S61.43,61.26,36.34,86.35C17.51,105.18,9,124,8.69,124.76a8,8,0,0,0,0,6.48c.35.79,8.82,19.58,27.65,38.41C61.43,194.74,93.12,208,128,208s66.57-13.26,91.66-38.35c18.83-18.83,27.3-37.62,27.65-38.41A8,8,0,0,0,247.31,124.76ZM128,192c-30.78,0-57.67-11.19-79.93-33.25A133.47,133.47,0,0,1,25,128,133.33,133.33,0,0,1,48.07,97.25C70.33,75.19,97.22,64,128,64s57.67,11.19,79.93,33.25A133.47,133.47,0,0,1,231,128C223.84,141.46,192.43,192,128,192Zm0-112a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Z"></path>
+                                </svg>
+                            </button>
+                        ` : ''}
+                        <button onclick="app.editSupportPlan('${plan.id}')" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors" title="Edit Plan">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256">
+                                <path d="M227.31,73.37,182.63,28.69a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96A16,16,0,0,0,227.31,73.37ZM92.69,208H48V163.31l88-88L180.69,120ZM192,108.69,147.31,64l24-24L216,84.69Z"></path>
+                            </svg>
+                        </button>
+                        <button onclick="app.deleteSupportPlan('${plan.id}')" class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" title="Delete Plan">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256">
+                                <path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    renderDocuments() {
+        const container = document.getElementById('documentsList');
+        if (!container) return;
+
+        const studentDocs = this.documents.filter(doc => doc.studentId === this.currentStudent.id);
+        
+        if (studentDocs.length === 0) {
+            container.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center py-8">No documents uploaded</p>';
+            return;
+        }
+
+        container.innerHTML = studentDocs.map(doc => `
+            <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-3">
+                <div class="flex items-start justify-between">
+                    <div class="flex items-start gap-3 flex-1">
+                        <div class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700">
+                            ${this.getFileIcon(doc.fileType)}
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-gray-800 dark:text-gray-200">${doc.name}</h4>
+                            <div class="flex items-center gap-4 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                <span>${doc.fileType.toUpperCase()}</span>
+                                <span>${this.formatFileSize(doc.fileSize)}</span>
+                                <span>Uploaded: ${this.formatDate(doc.createdAt)}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 ml-4">
+                        <button onclick="app.viewDocument('${doc.id}')" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors" title="View Document">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256">
+                                <path d="M247.31,124.76c-.35-.79-8.82-19.58-27.65-38.41C194.57,61.26,162.88,48,128,48S61.43,61.26,36.34,86.35C17.51,105.18,9,124,8.69,124.76a8,8,0,0,0,0,6.48c.35.79,8.82,19.58,27.65,38.41C61.43,194.74,93.12,208,128,208s66.57-13.26,91.66-38.35c18.83-18.83,27.3-37.62,27.65-38.41A8,8,0,0,0,247.31,124.76ZM128,192c-30.78,0-57.67-11.19-79.93-33.25A133.47,133.47,0,0,1,25,128,133.33,133.33,0,0,1,48.07,97.25C70.33,75.19,97.22,64,128,64s57.67,11.19,79.93,33.25A133.47,133.47,0,0,1,231,128C223.84,141.46,192.43,192,128,192Zm0-112a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Z"></path>
+                            </svg>
+                        </button>
+                        <button onclick="app.downloadDocument('${doc.id}')" class="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors" title="Download">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256">
+                                <path d="M224,144v64a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V144a8,8,0,0,1,16,0v56H208V144a8,8,0,0,1,16,0Zm-101.66,5.66a8,8,0,0,0,11.32,0l40-40a8,8,0,0,0-11.32-11.32L136,124.69V32a8,8,0,0,0-16,0v92.69L93.66,98.34a8,8,0,0,0-11.32,11.32Z"></path>
+                            </svg>
+                        </button>
+                        <button onclick="app.deleteDocument('${doc.id}')" class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" title="Delete Document">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256">
+                                <path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
 }
+
+// Utility methods for file handling
+BSSApp.prototype.formatFileSize = function(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
+
+BSSApp.prototype.getFileIcon = function(fileType) {
+    const icons = {
+        'pdf': '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#DC3545" viewBox="0 0 256 256"><path d="M224,152a8,8,0,0,1-8,8H192v16h16a8,8,0,0,1,0,16H192v16a8,8,0,0,1-16,0V152a8,8,0,0,1,8-8h32A8,8,0,0,1,224,152Z"></path></svg>',
+        'doc': '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#2B579A" viewBox="0 0 256 256"><path d="M52,144H36a8,8,0,0,0-8,8v56a8,8,0,0,0,8,8H52a36,36,0,0,0,0-72Z"></path></svg>',
+        'txt': '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#6C757D" viewBox="0 0 256 256"><path d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34Z"></path></svg>',
+        'json': '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#FFC107" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Z"></path></svg>',
+        'html': '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#E34F26" viewBox="0 0 256 256"><path d="M71,136l8,48H152l-8,48L108,248h40l36-216H71Z"></path></svg>',
+        'default': '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#6C757D" viewBox="0 0 256 256"><path d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34Z"></path></svg>'
+    };
+    return icons[fileType] || icons['default'];
+};
+
+// Support Plans methods
+BSSApp.prototype.showSupportPlanUpload = function() {
+    const modalHtml = `
+        <div id="supportPlanModal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50">
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Add Support Plan</h3>
+                <form id="supportPlanForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Plan Title</label>
+                        <input type="text" id="planTitle" required class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
+                        <textarea id="planDescription" rows="3" class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Upload File (Optional)</label>
+                        <input type="file" id="planFile" accept=".pdf,.doc,.docx,.txt" class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200">
+                    </div>
+                    <div class="flex gap-3 pt-4">
+                        <button type="submit" class="btn-primary flex-1">Save Plan</button>
+                        <button type="button" onclick="app.closeSupportPlanModal()" class="btn-secondary flex-1">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    document.getElementById('supportPlanForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        this.saveSupportPlan();
+    });
+};
+
+BSSApp.prototype.showDocumentUpload = function() {
+    const modalHtml = `
+        <div id="documentModal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50">
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Upload Document</h3>
+                <form id="documentForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Document Name</label>
+                        <input type="text" id="docName" required class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Upload File</label>
+                        <input type="file" id="docFile" accept=".txt,.doc,.docx,.pdf,.html,.json" required class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200">
+                        <p class="text-xs text-gray-500 mt-1">Supports: .txt, .doc, .docx, .pdf, .html, .json</p>
+                    </div>
+                    <div class="flex gap-3 pt-4">
+                        <button type="submit" class="btn-primary flex-1">Upload</button>
+                        <button type="button" onclick="app.closeDocumentModal()" class="btn-secondary flex-1">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    document.getElementById('documentForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        this.saveDocument();
+    });
+};
+
+BSSApp.prototype.saveSupportPlan = function() {
+    const title = document.getElementById('planTitle').value.trim();
+    const description = document.getElementById('planDescription').value.trim();
+    const fileInput = document.getElementById('planFile');
+    
+    if (!title) {
+        this.showAlert('Please enter a plan title', 'error');
+        return;
+    }
+
+    const plan = {
+        id: Date.now().toString(),
+        studentId: this.currentStudent.id,
+        title,
+        description,
+        createdAt: new Date().toISOString(),
+        filePath: null,
+        fileName: null,
+        fileSize: null,
+        fileType: null
+    };
+
+    // Handle file upload simulation (in real app, this would upload to server or use File System API)
+    if (fileInput.files && fileInput.files[0]) {
+        const file = fileInput.files[0];
+        plan.fileName = file.name;
+        plan.fileSize = file.size;
+        plan.fileType = file.type;
+        // In a real app, you'd upload the file and store the path
+        plan.filePath = `local://support-plans/${plan.id}/${file.name}`;
+    }
+
+    this.supportPlans.push(plan);
+    this.saveToLocalStorage();
+    this.renderSupportPlans();
+    this.closeSupportPlanModal();
+    this.showAlert('Support plan saved successfully', 'success');
+};
+
+BSSApp.prototype.saveDocument = function() {
+    const name = document.getElementById('docName').value.trim();
+    const fileInput = document.getElementById('docFile');
+    
+    if (!name || !fileInput.files || !fileInput.files[0]) {
+        this.showAlert('Please provide both name and file', 'error');
+        return;
+    }
+
+    const file = fileInput.files[0];
+    const fileExtension = file.name.split('.').pop().toLowerCase();
+
+    const doc = {
+        id: Date.now().toString(),
+        studentId: this.currentStudent.id,
+        name,
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: fileExtension,
+        filePath: `local://documents/${this.currentStudent.id}/${file.name}`,
+        createdAt: new Date().toISOString()
+    };
+
+    this.documents.push(doc);
+    this.saveToLocalStorage();
+    this.renderDocuments();
+    this.closeDocumentModal();
+    this.showAlert('Document uploaded successfully', 'success');
+};
+
+BSSApp.prototype.closeSupportPlanModal = function() {
+    const modal = document.getElementById('supportPlanModal');
+    if (modal) modal.remove();
+};
+
+BSSApp.prototype.closeDocumentModal = function() {
+    const modal = document.getElementById('documentModal');
+    if (modal) modal.remove();
+};
+
+BSSApp.prototype.deleteSupportPlan = function(planId) {
+    const plan = this.supportPlans.find(p => p.id === planId);
+    if (!plan) return;
+
+    if (confirm(`Are you sure you want to delete "${plan.title}"? This action cannot be undone.`)) {
+        this.supportPlans = this.supportPlans.filter(p => p.id !== planId);
+        this.saveToLocalStorage();
+        this.renderSupportPlans();
+        this.showAlert('Support plan deleted successfully', 'success');
+    }
+};
+
+BSSApp.prototype.deleteDocument = function(docId) {
+    const doc = this.documents.find(d => d.id === docId);
+    if (!doc) return;
+
+    if (confirm(`Are you sure you want to delete "${doc.name}"? This action cannot be undone.`)) {
+        this.documents = this.documents.filter(d => d.id !== docId);
+        this.saveToLocalStorage();
+        this.renderDocuments();
+        this.showAlert('Document deleted successfully', 'success');
+    }
+};
 
 // Initialize the app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
